@@ -217,6 +217,7 @@ pub enum Host {
 /// ```
 #[derive(Clone, PartialEq, Eq)]
 pub struct Config {
+    pub(crate) pgbouncer_mode: bool,
     pub(crate) user: Option<String>,
     pub(crate) password: Option<Vec<u8>>,
     pub(crate) dbname: Option<String>,
@@ -269,6 +270,7 @@ impl Config {
             target_session_attrs: TargetSessionAttrs::Any,
             channel_binding: ChannelBinding::Prefer,
             load_balance_hosts: LoadBalanceHosts::Disable,
+            pgbouncer_mode: false,
         }
     }
 
@@ -562,6 +564,19 @@ impl Config {
     /// Gets the host load balancing behavior.
     pub fn get_load_balance_hosts(&self) -> LoadBalanceHosts {
         self.load_balance_hosts
+    }
+
+    /// Disables caching of internal type lookup statements for PgBouncer
+    /// transaction pooling, where `DEALLOCATE ALL` invalidates prepared statements.
+    /// Defaults to `false`.
+    pub fn pgbouncer_mode(&mut self, enable: bool) -> &mut Config {
+        self.pgbouncer_mode = enable;
+        self
+    }
+
+    /// Returns whether PgBouncer transaction pooling support is enabled.
+    pub fn get_pgbouncer_mode(&self) -> bool {
+        self.pgbouncer_mode
     }
 
     fn param(&mut self, key: &str, value: &str) -> Result<(), Error> {

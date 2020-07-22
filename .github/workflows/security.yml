@@ -1,0 +1,26 @@
+name: Security compatibility
+on:
+  push:
+    branches: [gautam/security-pgbouncer-0.7.18]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: [5433:5432]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt -p tokio-postgres -p postgres -- --check
+      - run: cargo clippy -p tokio-postgres -p postgres -p postgres-native-tls --all-targets
+      - run: cargo test -p postgres-protocol -p tokio-postgres --lib
+      - run: cargo test -p tokio-postgres --test test pgbouncer_type_lookup_after_deallocate

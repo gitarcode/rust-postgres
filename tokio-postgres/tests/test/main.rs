@@ -1360,3 +1360,29 @@ async fn query_scalar() {
         .unwrap();
     assert_eq!(age, Some(20));
 }
+
+#[tokio::test]
+async fn pgbouncer_type_lookup_after_deallocate() -> Result<(), Box<dyn std::error::Error>> {
+    let mut config = Config::new();
+    config
+        .host("127.0.0.1")
+        .port(5433)
+        .user("postgres")
+        .pgbouncer_mode(true);
+    let (client, connection) = config.connect(NoTls).await?;
+    let connection = tokio::spawn(connection);
+    client.batch_execute("CREATE TYPE pg_temp.first_kind AS ENUM ('first'); CREATE TYPE pg_temp.second_kind AS ENUM ('second')").await?;
+    for query in [
+        "SELECT 'first'::pg_temp.first_kind",
+        "SELECT 'second'::pg_temp.second_kind",
+    ] {
+        client.batch_execute("BEGIN; DEALLOCATE ALL").await?;
+        let statement = client.prepare(query).await?;
+        assert_eq!(client.query(&statement, &[]).await?.len(), 1);
+        drop(statement);
+        client.batch_execute("COMMIT").await?;
+    }
+    drop(client);
+    connection.await??;
+    Ok(())
+}

@@ -120,6 +120,7 @@ where
         config.ssl_negotiation,
         process_id,
         secret_key,
+        config.pgbouncer_mode,
     );
     let connection = Connection::new(stream.inner, stream.delayed, parameters, receiver);
 
