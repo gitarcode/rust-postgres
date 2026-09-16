@@ -1386,3 +1386,21 @@ async fn pgbouncer_type_lookup_after_deallocate() -> Result<(), Box<dyn std::err
     connection.await??;
     Ok(())
 }
+
+#[tokio::test]
+async fn database_error_retains_server_message() -> Result<(), Box<dyn std::error::Error>> {
+    let mut config = Config::new();
+    config.host("127.0.0.1").port(5433).user("postgres");
+    let (client, connection) = config.connect(NoTls).await?;
+    let connection = tokio::spawn(connection);
+    let error = client
+        .query("SELECT 'not-a-uuid'::uuid", &[])
+        .await
+        .expect_err("invalid UUID must fail");
+    let server_error = error.as_db_error().ok_or("missing server error")?;
+    assert_eq!(server_error.code().code(), "22P02");
+    assert!(error.to_string().contains(server_error.message()));
+    drop(client);
+    connection.await??;
+    Ok(())
+}

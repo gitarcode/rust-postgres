@@ -401,7 +401,13 @@ impl fmt::Display for Error {
             #[cfg(feature = "runtime")]
             Kind::Connect => fmt.write_str("error connecting to server"),
             Kind::Timeout => fmt.write_str("timeout waiting for server"),
+        }?;
+        // Quaint stores Display output when converting driver errors. Preserve
+        // the cause text that it received from the 0.7.7 PgBouncer driver.
+        if let Some(cause) = &self.0.cause {
+            write!(fmt, ": {cause}")?;
         }
+        Ok(())
     }
 }
 
