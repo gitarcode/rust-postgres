@@ -277,8 +277,8 @@ impl Config {
     /// Sets the user to authenticate with.
     ///
     /// Defaults to the user executing this process.
-    pub fn user(&mut self, user: impl Into<String>) -> &mut Config {
-        self.user = Some(user.into());
+    pub fn user(&mut self, user: &str) -> &mut Config {
+        self.user = Some(user.to_owned());
         self
     }
 
