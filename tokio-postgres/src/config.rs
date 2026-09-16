@@ -1054,7 +1054,7 @@ impl<'a> UrlParser<'a> {
 
         let mut it = creds.splitn(2, ':');
         let user = self.decode(it.next().unwrap())?;
-        self.config.user(user);
+        self.config.user(&user);
 
         if let Some(password) = it.next() {
             let password = Cow::from(percent_encoding::percent_decode(password.as_bytes()));
